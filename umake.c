@@ -19,6 +19,7 @@
  * This function interprets line as a command line.  It creates a new child
  * process to execute the line and waits for that process to complete. 
  */
+char** arg_parse(char* line);
 void processline(char* line);
 
 /* Main entry point.
@@ -90,4 +91,31 @@ void processline (char* line) {
     break;
   }
   }
+}
+
+/* Arg Parse function
+ * Puts every argument separated by a space into an array of strings (2D char array)
+ */
+char** arg_parse(char* line) {
+  boolean done = false;
+  boolean lastValid = false;
+  int length = 0;
+  int i = 0;
+  while(!done) {
+    if(line+i == '\0') {
+      done = true;
+    } else if(line+i == ' ' && !lastValid) {
+      ++i;
+    } else if(line+i == ' ' && lastValid) {
+      lastValid = false;
+      line+i = '\0';
+      ++length;
+      ++i;
+    } else {
+      lastValid = true;
+      ++length;
+      ++i;
+    }
+  }
+  //allocate space for array and set each to the respective chars in line
 }
