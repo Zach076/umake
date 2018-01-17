@@ -1,5 +1,5 @@
 /* CSCI 347 micro-make
- * 
+ *
  * 09 AUG 2017, Aran Clauson
  */
 
@@ -17,13 +17,13 @@
 /* Process Line
  * line   The command line to execute.
  * This function interprets line as a command line.  It creates a new child
- * process to execute the line and waits for that process to complete. 
+ * process to execute the line and waits for that process to complete.
  */
 char** arg_parse(char* line);
 void processline(char* line);
 
 /* Main entry point.
- * argc    A count of command-line arguments 
+ * argc    A count of command-line arguments
  * argv    The command-line argument valus
  *
  * Micro-make (umake) reads from the uMakefile in the current working
@@ -38,7 +38,7 @@ int main(int argc, const char* argv[]) {
   size_t  bufsize = 0;
   char*   line    = NULL;
   ssize_t linelen = getline(&line, &bufsize, makefile);
-  
+
   while(-1 != linelen) {
 
     if(line[linelen-1]=='\n') {
@@ -46,7 +46,7 @@ int main(int argc, const char* argv[]) {
       line[linelen] = '\0';
     }
 
-    if(line[0] == '\t') 
+    if(line[0] == '\t')
       processline(&line[1]);
 
 
@@ -59,10 +59,10 @@ int main(int argc, const char* argv[]) {
 
 
 /* Process Line
- * 
+ *
  */
 void processline (char* line) {
-  
+
   const pid_t cpid = fork();
   switch(cpid) {
 
@@ -104,11 +104,11 @@ char** arg_parse(char* line) {
   while(!done) {
     if(line+i == '\0') {
       done = true;
-    } else if(line+i == ' ' && !lastValid) {
+    } else if((line+i == ' ' || line+i == '\t') && !lastValid) {
       ++i;
-    } else if(line+i == ' ' && lastValid) {
+    } else if((line+i == ' ' || line+i == '\t') && lastValid) {
       lastValid = false;
-      line+i = '\0';
+      //line+i = '\0';
       ++length;
       ++i;
     } else {
@@ -118,4 +118,30 @@ char** arg_parse(char* line) {
     }
   }
   //allocate space for array and set each to the respective chars in line
+  char **parsed = malloc((length+1) * sizeof(char));
+  //set row pointers
+  i = 0;
+  done = false;
+  int linearArrayLoc = 0;
+  int arrayRowLoc = 0;
+  while(!done) {
+    if(line+i == '\0') {
+      done = true;
+    } else if((line+i == ' ' || line+i == '\t') && !lastValid) {
+      ++i;
+    } else if((line+i == ' ' || line+i == '\t') && lastValid) {
+      lastValid = false;
+      // set position in line to '\0' or add null character to string
+      ++arrayRowLoc;
+      ++linearArrayLoc;
+      ++i;
+    } else {
+      // point to first letter in string if lastValid is false
+      lastValid = true;
+      // put character value in parsed
+      ++linearArrayLoc;
+      ++i;
+    }
+  }
+  //once done set last array pointer to null
 }
