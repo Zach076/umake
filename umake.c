@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <ctype.h>
 
 /* CONSTANTS */
 
@@ -63,6 +64,8 @@ int main(int argc, const char* argv[]) {
  */
 void processline (char* line) {
 
+  char** argumentArray = arg_parse(line);
+
   const pid_t cpid = fork();
   switch(cpid) {
 
@@ -91,31 +94,32 @@ void processline (char* line) {
     break;
   }
   }
+  free(argumentArray);
 }
 
 /* Arg Parse function
  * Puts every argument separated by a space into an array of strings (2D char array)
  */
 char** arg_parse(char* line) {
-  boolean done = false;
-  boolean lastValid = false;
+  int booleanDone = 1;
+  int booleanLastValid = 1;
   int length = 0;
   int i = 0;
   int numArgs = 0;
   //while loop to check how much memory is needed for array
-  while(!done) {
+  while(!booleanDone) {
     if(line+i == '\0') {
-      done = true;
-    } else if((line+i == ' ' || line+i == '\t') && !lastValid) {
+      booleanDone = 0;
+    } else if((isspace(line+i)) && !booleanLastValid) {
       ++i;
-    } else if((line+i == ' ' || line+i == '\t') && lastValid) {
-      lastValid = false;
-      line+i = '\0';
+    } else if((isspace(line+i)) && booleanLastValid) {
+      booleanLastValid = 1;
+      *(line+i)='\0';
       ++length;
       ++numArgs;
       ++i;
     } else {
-      lastValid = true;
+      booleanLastValid = 0;
       ++length;
       ++i;
     }
@@ -123,29 +127,29 @@ char** arg_parse(char* line) {
   //allocate space for array and set each to the respective chars in line
   char **parsed = malloc((length+1) * sizeof(char));
   //set row pointers
-  done = false;
+  booleanDone = 1;
   int arrayLoc = 0;
-  lastValid = false;
+  booleanLastValid = 1;
   i = 0;
-  while(!done) {
+  while(!booleanDone) {
     if(line+i == '\0' && numArgs == 0) {
-      done = true;
-    } else if((line+i == ' ' || line+i == '\t') && !lastValid) {
+      booleanDone = 0;
+    } else if((isspace(line+i)) && !booleanLastValid) {
       ++i;
-    } else if((line+i == ' ' || line+i == '\t') && lastValid) {
-      lastValid = false;
-      --numArgs;
+    } else if((isspace(line+i)) && booleanLastValid) {
+      booleanLastValid = 1;
+      ++i;
+    } else if(!booleanLastValid) {
+      booleanLastValid = 0;
+      *(parsed+arrayLoc)=line+i;
       ++arrayLoc;
-      ++i;
-    } else if(!lastValid) {
-      lastValid = true;
-      *parsed+arrayLoc = line+i;
+      --numArgs;
       ++i;
     } else {
       ++i;
     }
   }
   //once done set last array pointer to null
-  *parsed+arrayLoc = '\0';
-  return **parsed;
+  *(parsed+arrayLoc)='\0';
+  return parsed;
 }
