@@ -101,6 +101,8 @@ char** arg_parse(char* line) {
   boolean lastValid = false;
   int length = 0;
   int i = 0;
+  int numArgs = 0;
+  //while loop to check how much memory is needed for array
   while(!done) {
     if(line+i == '\0') {
       done = true;
@@ -108,8 +110,9 @@ char** arg_parse(char* line) {
       ++i;
     } else if((line+i == ' ' || line+i == '\t') && lastValid) {
       lastValid = false;
-      //line+i = '\0';
+      line+i = '\0';
       ++length;
+      ++numArgs;
       ++i;
     } else {
       lastValid = true;
@@ -120,28 +123,29 @@ char** arg_parse(char* line) {
   //allocate space for array and set each to the respective chars in line
   char **parsed = malloc((length+1) * sizeof(char));
   //set row pointers
-  i = 0;
   done = false;
-  int linearArrayLoc = 0;
-  int arrayRowLoc = 0;
+  int arrayLoc = 0;
+  lastValid = false;
+  i = 0;
   while(!done) {
-    if(line+i == '\0') {
+    if(line+i == '\0' && numArgs == 0) {
       done = true;
     } else if((line+i == ' ' || line+i == '\t') && !lastValid) {
       ++i;
     } else if((line+i == ' ' || line+i == '\t') && lastValid) {
       lastValid = false;
-      // set position in line to '\0' or add null character to string
-      ++arrayRowLoc;
-      ++linearArrayLoc;
+      --numArgs;
+      ++arrayLoc;
+      ++i;
+    } else if(!lastValid) {
+      lastValid = true;
+      *parsed+arrayLoc = line+i;
       ++i;
     } else {
-      // point to first letter in string if lastValid is false
-      lastValid = true;
-      // put character value in parsed
-      ++linearArrayLoc;
       ++i;
     }
   }
   //once done set last array pointer to null
+  *parsed+arrayLoc = '\0';
+  return **parsed;
 }
