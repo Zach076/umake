@@ -111,14 +111,13 @@ char** arg_parse(char* line) {
   while(!booleanDone) {
     if(line[i] == '\0' || line[i] == '\n') {
       booleanDone = 1;
-    } else if(isspace(line[i]) && booleanLastValid == 1) {
+    } else if(isspace(line[i]) && booleanLastValid == 0) {
       ++i;
-    } else if(isspace(line[i]) && booleanLastValid) {
+    } else if(isspace(line[i]) && booleanLastValid == 1) {
       booleanLastValid = 0;
-      line[i]='\0';
       ++length;
       ++i;
-    } else if(booleanLastValid == 1){
+    } else if(booleanLastValid == 0){
       booleanLastValid = 1;
       ++numArgs;
       ++length;
@@ -138,12 +137,13 @@ char** arg_parse(char* line) {
   while(!booleanDone) {
     if((line[i] == '\0' || line[i] == '\n') && numArgs == 0) {
       booleanDone = 1;
+    } else if(isspace(line[i]) && booleanLastValid == 0) {
+      ++i;
     } else if(isspace(line[i]) && booleanLastValid == 1) {
-      ++i;
-    } else if(isspace(line[i]) && booleanLastValid) {
       booleanLastValid = 0;
+      line[i]='\0';
       ++i;
-    } else if(booleanLastValid == 1) {
+    } else if(booleanLastValid == 0) {
       booleanLastValid = 1;
       parsed[arrayLoc] = &(line[i]);
       ++arrayLoc;
