@@ -1,6 +1,7 @@
 /* CSCI 347 micro-make
  *
  * 09 AUG 2017, Aran Clauson
+ * Modified by Zach Richardson
  */
 
 
@@ -65,79 +66,72 @@ int main(int argc, const char* argv[]) {
 void processline (char* line) {
 
   char** argumentArray = arg_parse(line);
-
-  const pid_t cpid = fork();
-  switch(cpid) {
-
-  case -1: {
-    perror("fork");
-    break;
-  }
-
-  case 0: {
-    execvp(*argumentArray, argumentArray);
-    perror("execvp");
-    exit(EXIT_FAILURE);
-    break;
-  }
-
-  default: {
-    int   status;
-    const pid_t pid = wait(&status);
-    if(-1 == pid) {
-      perror("wait");
+  if(argumentArray[0] != '\0') {
+    
+    const pid_t cpid = fork();
+    switch(cpid) {
+    
+    case -1: {
+      perror("fork");
+      break;
     }
-    else if (pid != cpid) {
-      fprintf(stderr, "wait: expected process %d, but waited for process %d",
-              cpid, pid);
+    
+    case 0: {
+      execvp(*argumentArray, argumentArray);
+      perror("execvp");
+      exit(EXIT_FAILURE);
+      break;
     }
-    break;
-  }
-  }
+    
+    default: {
+      int   status;
+      const pid_t pid = wait(&status);
+        if(-1 == pid) {
+          perror("wait");
+        }
+        else if (pid != cpid) {
+          fprintf(stderr, "wait: expected process %d, but waited for process %d",
+                  cpid, pid);
+        }
+      break;
+    }
+    }
+  }  
   free(argumentArray);
 }
 
 /* Arg Parse function
  * Puts every argument separated by a space into an array of strings (2D char array)
  */
-char** arg_parse(char* line) {
+char** arg_parse(char* line, int* argcp) {
   //int 0 for boolean false
-  int booleanDone = 0;
   int booleanLastValid = 0;
-  int length = 0;
   int i = 0;
   int numArgs = 0;
   //while loop to check how much memory is needed for array
-  while(!booleanDone) {
-    if(line[i] == '\0' || line[i] == '\n') {
-      booleanDone = 1;
-    } else if(isspace(line[i]) && booleanLastValid == 0) {
+  while(line[i] == '\0' || line[i] == '\n') {
+    if(isspace(line[i]) && booleanLastValid == 0) {
       ++i;
     } else if(isspace(line[i]) && booleanLastValid == 1) {
       booleanLastValid = 0;
-      ++length;
       ++i;
     } else if(booleanLastValid == 0){
       booleanLastValid = 1;
       ++numArgs;
-      ++length;
       ++i;
     } else {
-      ++length;
       ++i;
     }
   }
+  argcp = &numArgs;
   //allocate space for array and set each to the respective chars in line
-  char **parsed = malloc((length+1) * sizeof(char*));
+  char **parsed = malloc((numArgs+1) * sizeof(char*));
   //set row pointers
-  booleanDone = 0;
   int arrayLoc = 0;
   booleanLastValid = 0;
   i = 0;
-  while(!booleanDone) {
-    if((line[i] == '\0' || line[i] == '\n') && numArgs == 0) {
-      booleanDone = 1;
-    } else if(isspace(line[i]) && booleanLastValid == 0) {
+  while(line[i] == '\0' || line[i] == '\n') {
+    if(isspace(line[i]) && booleanLastValid == 0) {
       ++i;
     } else if(isspace(line[i]) && booleanLastValid == 1) {
       booleanLastValid = 0;
@@ -147,7 +141,6 @@ char** arg_parse(char* line) {
       booleanLastValid = 1;
       parsed[arrayLoc] = &(line[i]);
       ++arrayLoc;
-      --numArgs;
       ++i;
     } else {
       ++i;
@@ -155,13 +148,5 @@ char** arg_parse(char* line) {
   }
   //once done set last array pointer to null
   parsed[arrayLoc]='\0';
-
-/*
-  i=0;
-  while(*(*parsed+i) != '\0') {
-    printf((*parsed+i));
-    ++i;
-  }
-*/
   return parsed;
 }
