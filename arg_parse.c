@@ -9,13 +9,13 @@
  * Puts every argument separated by a space into an array of strings (2D char array)
  */
 
-char** arg_parse(char* line, int* argcp) {
+char** arg_parse(char* line, int *argcp) {
   //int 0 for boolean false
   int booleanLastValid = 0;
   int i = 0;
   int numArgs = 0;
   //while loop to check how much memory is needed for array
-  while(line[i] == '\0' || line[i] == '\n') {
+  while(line[i] != '\0') {
     if(isspace(line[i]) && booleanLastValid == 0) {
       ++i;
     } else if(isspace(line[i]) && booleanLastValid == 1) {
@@ -36,7 +36,7 @@ char** arg_parse(char* line, int* argcp) {
   int arrayLoc = 0;
   booleanLastValid = 0;
   i = 0;
-  while(line[i] == '\0' || line[i] == '\n') {
+  while(line[i] != '\0') {
     if(isspace(line[i]) && booleanLastValid == 0) {
       ++i;
     } else if(isspace(line[i]) && booleanLastValid == 1) {
