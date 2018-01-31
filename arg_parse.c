@@ -29,7 +29,7 @@ char** arg_parse(char* line, int* argcp) {
       ++i;
     }
   }
-  argcp = &numArgs;
+  *argcp = numArgs;
   //allocate space for array and set each to the respective chars in line
   char **parsed = malloc((numArgs+1) * sizeof(char*));
   //set row pointers
