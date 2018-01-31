@@ -22,7 +22,7 @@
  * This function interprets line as a command line.  It creates a new child
  * process to execute the line and waits for that process to complete.
  */
-char** arg_parse(char* line);
+
 void processline(char* line);
 
 /* Main entry point.
@@ -66,24 +66,25 @@ int main(int argc, const char* argv[]) {
  */
 void processline (char* line) {
 
-  char** argumentArray = arg_parse(line);
-  if(argumentArray[0] != '\0') {
-    
+  int* argcp = 0;
+  char** argumentArray = arg_parse(line, argcp);
+  if(*argcp) {
+
     const pid_t cpid = fork();
     switch(cpid) {
-    
+
     case -1: {
       perror("fork");
       break;
     }
-    
+
     case 0: {
       execvp(*argumentArray, argumentArray);
       perror("execvp");
       exit(EXIT_FAILURE);
       break;
     }
-    
+
     default: {
       int   status;
       const pid_t pid = wait(&status);
@@ -97,6 +98,6 @@ void processline (char* line) {
       break;
     }
     }
-  }  
+  }
   free(argumentArray);
 }
