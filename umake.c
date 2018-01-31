@@ -66,7 +66,7 @@ int main(int argc, const char* argv[]) {
  */
 void processline (char* line) {
 
-  int* argcp = 0;
+  int* argcp = malloc(sizeof(int));
   char** argumentArray = arg_parse(line, argcp);
   if(*argcp) {
 
