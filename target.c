@@ -1,6 +1,12 @@
 #include "target.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <ctype.h>
 
 struct target_st {
+  struct target_st* next;
   char* name;
   char** dep_list;
   int dep_len;
@@ -11,10 +17,10 @@ struct target_st {
 target* new_target(char* name) {
   struct target_st* target;
   strdup(target.name, *name);
-  target.dep_last = 0;
-  target.rule_last = 0;
-  target.dep_list = malloc(target.dep_list, sizeof(char*)*(dep_len));
-  target.rule_list = malloc(target.rule_list, sizeof(char*)*(rule_len));
+  target->dep_last = 0;
+  target->rule_last = 0;
+  target->dep_list = malloc(target.dep_list, sizeof(char*)*(dep_len));
+  target->rule_list = malloc(target.rule_list, sizeof(char*)*(rule_len));
   return target;
 }
 
