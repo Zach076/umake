@@ -5,42 +5,94 @@
 #include <sys/wait.h>
 #include <ctype.h>
 
-struct target_st {
-  struct target_st* next;
-  char* name;
-  char** dep_list;
-  int dep_len;
-  char** rule_list;
-  int rule_len;
+struct stringList {
+  char* stringVal;
+  struct stringList* next;
 };
 
+struct target_st {
+  struct target_st* next;
+  char* tgtName;
+  struct stringList* depList;
+  struct stringList* ruleList;
+};
+
+global target* tgt_list = NULL;
+
 target* new_target(char* name) {
-  struct target_st* target;
-  strdup(target.name, *name);
-  target->dep_last = 0;
-  target->rule_last = 0;
-  target->dep_list = malloc(target.dep_list, sizeof(char*)*(dep_len));
-  target->rule_list = malloc(target.rule_list, sizeof(char*)*(rule_len));
-  return target;
+  target newTarget = malloc(sizeof(target));
+  newTarget->tgtName = strdup(*name);
+  newTarget->next = NULL;
+  newTarget->depList = NULL;
+  newTarget->ruleList = NULL;
+  
+  target *currTgt = &tgt_list;
+  if(*currTgt == NULL) {
+    *tgt_list = newTarget;
+  } else {
+    while(*currTgt->next != NULL) {
+      *currTgt = *currTgt->next;
+    }
+    *currTgt->next = newTarget;
+  }
+  return *tgt_list;
 }
 
 target* find_target(char* name) {
-  //honestly dont know
+  target *currTgt = &tgt_list;
+  while(*currTgt->next != NULL) {
+    if(!strcmp(*currTgt->tgtName, *name)){
+      return currTgt;
+    } else {
+      *currTgt = *currTgt->next;
+    }
+  }
 }
 
 void add_dependency_target(target* tgt, char* dep) {
-  tgt.dep_list = realloc(tgt.dep_list, sizeof(char*)*(dep_len+1));
-  tgt.dep_list[dep_len++] = dep;
+  stringList *newDep = malloc(sizeof(stringList));
+  *newDep->stringVal = strdup(*dep);
+  *newDep->next = NULL;
+    
+  stringList *currDep = &depList;
+  if(*currDep == NULL) {
+    *depList = newDep;
+  } else {
+    while(*currDep->next != NULL) {
+      *currDep = *currDep->next;
+    }
+    *currDep->next = newDep;
+  }
 }
 
 void add_rule_target(target* tgt, char* rule) {
-  tgt.rule_list = realloc(tgt.rule_list, sizeof(char*)*(rule_len+1));
-  tgt.rule_list[rule_len++] = rule;
+  stringList *newRule = malloc(sizeof(stringList));
+  *newRule->stringVal = strdup(*rule);
+  *newRule->next = NULL;
+    
+  stringList *currRule = &ruleList;
+  if(*currRule == NULL) {
+    *ruleList = newRule;
+  } else {
+    while(*currRule->next != NULL) {
+      *currRule = *currRule->next;
+    }
+    *currRule->next = newRule;
+  }
 }
-void for_each_rule(target* tgt, void(*action)(char*)) {
 
+void for_each_rule(target* tgt, list_action action) {
+  stringList currRule = tgt->ruleList
+  while(currRule->next != NULL) {
+    action(currRule->stringVal);
+    currRule = currRule->next;
+  }
 }
 
-void for_each_dependency(target* tgt, void(*action)(char*)) {
-
+void for_each_dependency(target* tgt, vlist_action action) {
+  stringList currDep = tgt->depList
+  while(currDep->next != NULL) {
+    action(currDep->stringVal);
+    currDep = currDep->next;
+  }
 }
