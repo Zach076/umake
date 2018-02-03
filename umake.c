@@ -4,7 +4,6 @@
  * Modified by Zach Richardson
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,18 +40,42 @@ int main(int argc, const char* argv[]) {
   size_t  bufsize = 0;
   char*   line    = NULL;
   ssize_t linelen = getline(&line, &bufsize, makefile);
+  int i = 0;
+  int start = 0;
+  int lastSpace = 0;
+  target* currTgt = NULL;
 
   while(-1 != linelen) {
+    i = 0;
+    start = 0;
 
     if(line[linelen-1]=='\n') {
       linelen -= 1;
       line[linelen] = '\0';
     }
 
-    if(line[0] == '\t')
-      processline(&line[1]);
+    if(line[0] == '\t') {
+      add_rule_target(currTgt, line);
+    } else {
+      while(line[i] != '\0') {
+        if(line[i] == ':') {
+          *line[i] = '\0';
+          currTgt = new_target(line[start]);
+        } else if(line[i] == ' ') {
+          *line[i] = '\0';
+          lastSpace = 1;
+          if(start != 0) {
+            add_dependency_target(currTgt, line[start]);
+          }
+        } else if(lastSpace == 1) {
+          start = i;
+          lastSpace = 0;
+        }
+        ++i;
+      }
+    }
 
-
+    
     linelen = getline(&line, &bufsize, makefile);
   }
 
