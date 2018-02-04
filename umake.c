@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include "arg_parse.h"
+#include "target.h"
 
 /* CONSTANTS */
 
@@ -59,13 +60,13 @@ int main(int argc, const char* argv[]) {
     } else {
       while(line[i] != '\0') {
         if(line[i] == ':') {
-          *line[i] = '\0';
-          currTgt = new_target(line[start]);
+          line[i] = '\0';
+          currTgt = new_target(&line[start]);
         } else if(line[i] == ' ') {
-          *line[i] = '\0';
+          line[i] = '\0';
           lastSpace = 1;
           if(start != 0) {
-            add_dependency_target(currTgt, line[start]);
+            add_dependency_target(currTgt, &line[start]);
           }
         } else if(lastSpace == 1) {
           start = i;
@@ -75,7 +76,7 @@ int main(int argc, const char* argv[]) {
       }
     }
 
-    
+
     linelen = getline(&line, &bufsize, makefile);
   }
 
