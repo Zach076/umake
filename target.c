@@ -29,14 +29,16 @@ target* new_target(char* name) {
 
   target *currTgt = tgt_list;
   if(currTgt == NULL) {
-    tgt_list = newTarget;
+    currTgt = newTarget;
+    tgt_list = currTgt;
+    return currTgt;
   } else {
     while(currTgt->next != NULL) {
       *currTgt = *currTgt->next;
     }
     currTgt->next = newTarget;
   }
-  return tgt_list;
+  return currTgt->next;
 }
 
 target* find_target(char* name) {
