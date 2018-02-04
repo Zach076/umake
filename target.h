@@ -1,8 +1,10 @@
 #ifndef _TARGET_H_
 #define _TARGET_H_
 
+struct stringList_st;
 struct target_st;
 typedef struct target_st target;
+typedef struct stringList_st stringList;
 typedef void(*list_action)(char*);
 
 target* new_target(char* name);
