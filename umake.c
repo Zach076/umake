@@ -44,7 +44,8 @@ int main(int argc, const char* argv[]) {
   int i = 0;
   int start = 0;
   int lastSpace = 0;
-  target* currTgt = NULL;
+  int inDep = 1;
+  target *currTgt = NULL;
 
   while(-1 != linelen) {
     i = 0;
@@ -56,9 +57,14 @@ int main(int argc, const char* argv[]) {
     }
 
     if(line[0] == '\t') {
+      inDep = 0;
       add_rule_target(currTgt, line);
     } else {
       while(line[i] != '\0') {
+        if(!inDep) {
+          for_each_rule(currTgt, processline);
+          inDep = 1;
+        }
         if(line[i] == ':') {
           line[i] = '\0';
           currTgt = new_target(&line[start]);
@@ -76,9 +82,9 @@ int main(int argc, const char* argv[]) {
       }
     }
 
-
     linelen = getline(&line, &bufsize, makefile);
   }
+  for_each_rule(currTgt, processline);
 
   free(line);
   return EXIT_SUCCESS;
