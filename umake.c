@@ -68,6 +68,9 @@ int main(int argc, const char* argv[]) {
         if(line[i] == ':') {
           line[i] = '\0';
           currTgt = new_target(&line[start]);
+        } else if(line[i] == '=') {
+          line[i] = '\0';
+          setenv(line[start], line[i+1], 1);
         } else if(line[i] == ' ') {
           line[i] = '\0';
           lastSpace = 1;
