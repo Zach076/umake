@@ -22,7 +22,8 @@
  * This function interprets line as a command line.  It creates a new child
  * process to execute the line and waits for that process to complete.
  */
-
+int expand(char* orig, char* new, int newsize);
+void executeTarget(target* tgt);
 void processline(char* line);
 
 /* Main entry point.
@@ -44,7 +45,6 @@ int main(int argc, const char* argv[]) {
   int i = 0;
   int start = 0;
   int lastSpace = 0;
-  int inDep = 1;
   target *currTgt = NULL;
 
   while(-1 != linelen) {
@@ -57,14 +57,9 @@ int main(int argc, const char* argv[]) {
     }
 
     if(line[0] == '\t') {
-      inDep = 0;
       add_rule_target(currTgt, line);
     } else {
       while(line[i] != '\0') {
-        if(!inDep) {
-          for_each_rule(currTgt, processline);
-          inDep = 1;
-        }
         if(line[i] == ':') {
           line[i] = '\0';
           currTgt = new_target(&line[start]);
@@ -87,26 +82,7 @@ int main(int argc, const char* argv[]) {
 
     linelen = getline(&line, &bufsize, makefile);
   }
-  for_each_rule(currTgt, processline);
-  /* 
-   * i=0;
-   * int u=0;
-   * int nameFound = 0;
-   * char** listOfTargetNames;
-   * while(firstTarget[i] != NULL) {
-   *   while(!nameFound && list listOfTargetNames[u] != NULL) {
-   *     if(currTgt == listOfTargetNames[u]) {
-   *       nameFound = 1;
-   *     }
-   *     u++;
-   *   }
-   *   if(!namefound) {
-   *     executeTarget(currTgt, listOfTargetNames);
-   *   }
-   *   u=0;
-   *   nameFound=0;
-   * }
-   */
+  executeTarget(getTargets());
 
   free(line);
   return EXIT_SUCCESS;
@@ -152,4 +128,30 @@ void processline (char* line) {
     }
   }
   free(argumentArray);
+}
+
+int expand(char* orig, char* new, int newsize) {
+  int i = 0;
+  int start = 0;
+  int lookingForEnd = 0;
+  while(orig[i] != '\0') {
+    if(orig[i] == '$' && orig[i+1] == '{') {
+      lookingForEnd = 1;
+      start = i;
+    } else if(orig[i] == '}' && lookingForEnd) {
+      getenv(strndup(orig[start+2], i-(start+2)));
+    } else if(!lookingForEnd) {
+      //put char into new
+    }
+    i++
+  }
+  if(lookingForEnd) {
+    //put orig[start] into new
+  }
+}
+
+void executeTarget(target* tgt) {
+  for_each_dependency(tgt, executeTarget);
+
+  for_each_rule(tgt, processline);
 }
