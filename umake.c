@@ -88,6 +88,25 @@ int main(int argc, const char* argv[]) {
     linelen = getline(&line, &bufsize, makefile);
   }
   for_each_rule(currTgt, processline);
+  /* 
+   * i=0;
+   * int u=0;
+   * int nameFound = 0;
+   * char** listOfTargetNames;
+   * while(firstTarget[i] != NULL) {
+   *   while(!nameFound && list listOfTargetNames[u] != NULL) {
+   *     if(currTgt == listOfTargetNames[u]) {
+   *       nameFound = 1;
+   *     }
+   *     u++;
+   *   }
+   *   if(!namefound) {
+   *     executeTarget(currTgt, listOfTargetNames);
+   *   }
+   *   u=0;
+   *   nameFound=0;
+   * }
+   */
 
   free(line);
   return EXIT_SUCCESS;
