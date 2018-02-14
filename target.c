@@ -98,9 +98,15 @@ void for_each_rule(target* tgt, list_action action) {
 
 void for_each_dependency(target* tgt, list_action action) {
   stringList* currDep = tgt->depList;
-  while(currDep->next != NULL) {
+  if(currDep->stringVal != NULL) {
+    while(currDep->next != NULL) {
+      action(currDep->stringVal);
+      currDep = currDep->next;
+    }
     action(currDep->stringVal);
-    currDep = currDep->next;
   }
-  action(currDep->stringVal);
+}
+
+target* getTargets() {
+  return tgt_list;
 }
