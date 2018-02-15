@@ -16,6 +16,7 @@ struct target_st {
   char* tgtName;
   stringList* depList;
   stringList* ruleList;
+  int executed;
 };
 
 static target* tgt_list = NULL;
@@ -26,6 +27,7 @@ target* new_target(char* name) {
   newTarget->next = NULL;
   newTarget->depList = NULL;
   newTarget->ruleList = NULL;
+  newTarget->executed = 0;
 
   target *currTgt = tgt_list;
   if(currTgt == NULL) {
@@ -105,6 +107,18 @@ void for_each_dependency(target* tgt, list_action action) {
     }
     action(currDep->stringVal);
   }
+}
+
+char* getName(target* tgt) {
+  return tgt->tgtName;
+}
+
+void setExecuted(target* tgt, int i) {
+  tgt->executed = i;
+}
+
+int isExecuted(target* tgt) {
+  return tgt->executed;
 }
 
 target* getTargets() {
