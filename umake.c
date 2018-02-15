@@ -46,6 +46,7 @@ int main(int argc, const char* argv[]) {
   int start = 0;
   int lastSpace = 0;
   target *currTgt = NULL;
+  target* tgtList = NULL;
 
   while(-1 != linelen) {
     i = 0;
@@ -82,7 +83,13 @@ int main(int argc, const char* argv[]) {
 
     linelen = getline(&line, &bufsize, makefile);
   }
-  executeTarget(getTargets());
+  tgtList= getTargets();
+  i=0;
+  while(tgtList[i] != NULL) {
+    if(!isExecuted(tgtList[i])) {
+      executeTarget(getName(tgtList[i]));
+    }
+  }
 
   free(line);
   return EXIT_SUCCESS;
@@ -140,6 +147,7 @@ int expand(char* orig, char* new, int newsize) {
       start = i;
     } else if(orig[i] == '}' && lookingForEnd) {
       getenv(strndup(orig[start+2], i-(start+2)));
+      //somehow put this into new
     } else if(!lookingForEnd) {
       //put char into new
     }
@@ -150,8 +158,13 @@ int expand(char* orig, char* new, int newsize) {
   }
 }
 
-void executeTarget(target* tgt) {
-  for_each_dependency(tgt, executeTarget);
+void executeTarget(char* tgtName) {
+  target* tgt = NULL;
+  tgt = find_target(tgtName);
+  if(tgt != NULL) {
+    setExecuted(tgt, 1);
+    for_each_dependency(tgt, executeTarget);
 
-  for_each_rule(tgt, processline);
+    for_each_rule(tgt, processline);
+  }
 }
