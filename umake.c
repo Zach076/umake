@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#include <string.h>
 #include "arg_parse.h"
 #include "target.h"
 
@@ -23,7 +24,7 @@
  * process to execute the line and waits for that process to complete.
  */
 int expand(char* orig, char* new, int newsize);
-void executeTarget(target* tgt);
+void executeTarget(char* tgtName);
 void processline(char* line);
 
 /* Main entry point.
@@ -47,6 +48,7 @@ int main(int argc, const char* argv[]) {
   int lastSpace = 0;
   target *currTgt = NULL;
   target* tgtList = NULL;
+  int first = 1;
 
   while(-1 != linelen) {
     i = 0;
@@ -64,9 +66,13 @@ int main(int argc, const char* argv[]) {
         if(line[i] == ':') {
           line[i] = '\0';
           currTgt = new_target(&line[start]);
+          if(first) {
+            first = 0;
+            tgtList = find_target(&line[start]);
+          }
         } else if(line[i] == '=') {
           line[i] = '\0';
-          setenv(line[start], line[i+1], 1);
+          setenv(&line[start], &line[i+1], 1);
         } else if(line[i] == ' ') {
           line[i] = '\0';
           lastSpace = 1;
@@ -83,12 +89,12 @@ int main(int argc, const char* argv[]) {
 
     linelen = getline(&line, &bufsize, makefile);
   }
-  tgtList= getTargets();
   i=0;
-  while(tgtList[i] != NULL) {
-    if(!isExecuted(tgtList[i])) {
-      executeTarget(getName(tgtList[i]));
+  while(tgtList != NULL && getNext(tgtList) != NULL) {
+    if(!isExecuted(tgtList)) {
+      executeTarget(getName(tgtList));
     }
+    tgtList = getNext(tgtList);
   }
 
   free(line);
@@ -102,7 +108,11 @@ int main(int argc, const char* argv[]) {
 void processline (char* line) {
 
   int* argcp = malloc(sizeof(int));
-  char** argumentArray = arg_parse(line, argcp);
+  char* expandedLine = malloc(1024 * sizeof(char));
+  if(expand(line, expandedLine, 1024)) {
+    return;
+  }
+  char** argumentArray = arg_parse(expandedLine, argcp);
   if(*argcp) {
 
     const pid_t cpid = fork();
@@ -140,22 +150,35 @@ void processline (char* line) {
 int expand(char* orig, char* new, int newsize) {
   int i = 0;
   int start = 0;
+  int newLen = 0;
   int lookingForEnd = 0;
   while(orig[i] != '\0') {
-    if(orig[i] == '$' && orig[i+1] == '{') {
+    if(orig[i] == '$' && orig[i+1] == '{' && !lookingForEnd) {
       lookingForEnd = 1;
       start = i;
     } else if(orig[i] == '}' && lookingForEnd) {
-      getenv(strndup(orig[start+2], i-(start+2)));
-      //somehow put this into new
+      lookingForEnd = 0;
+      if(newLen + (i-start+2) < newsize) {
+        newLen = newLen + sprintf(&new[newLen], "%s", getenv(strndup(&orig[start+2], i-(start+2))));
+      } else {
+        fprintf(stderr, "Buffer overflow while expanding environment variables.");
+        return 0;
+      }
     } else if(!lookingForEnd) {
-      //put char into new
+      if(newLen + 1 < newsize) {
+        newLen = newLen + sprintf(&new[newLen], "%s", &orig[i]);
+      } else {
+        fprintf(stderr, "Buffer overflow while expanding environment variables.");
+        return 0;
+      }
     }
-    i++
+    ++i;
   }
   if(lookingForEnd) {
-    //put orig[start] into new
+    fprintf(stderr, "No \'}\' found. Mismatched braces.");
+    return 0;
   }
+  return 1;
 }
 
 void executeTarget(char* tgtName) {
