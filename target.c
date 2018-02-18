@@ -36,7 +36,7 @@ target* new_target(char* name) {
     return currTgt;
   } else {
     while(currTgt->next != NULL) {
-      *currTgt = *currTgt->next;
+      currTgt = currTgt->next;
     }
     currTgt->next = newTarget;
   }
@@ -100,13 +100,17 @@ void for_each_rule(target* tgt, list_action action) {
 
 void for_each_dependency(target* tgt, list_action action) {
   stringList* currDep = tgt->depList;
-  if(currDep->stringVal != NULL) {
+  if(currDep != NULL && currDep->stringVal != NULL) {
     while(currDep->next != NULL) {
       action(currDep->stringVal);
       currDep = currDep->next;
     }
     action(currDep->stringVal);
   }
+}
+
+target* getNext(target* tgt) {
+  return tgt->next;
 }
 
 char* getName(target* tgt) {
@@ -119,8 +123,4 @@ void setExecuted(target* tgt, int i) {
 
 int isExecuted(target* tgt) {
   return tgt->executed;
-}
-
-target* getTargets() {
-  return tgt_list;
 }
