@@ -49,6 +49,7 @@ int main(int argc, const char* argv[]) {
   target *currTgt = NULL;
   target* tgtList = NULL;
   int first = 1;
+  int envLine = 0;
 
   while(-1 != linelen) {
     i = 0;
@@ -59,10 +60,11 @@ int main(int argc, const char* argv[]) {
       line[linelen] = '\0';
     }
 
+    envLine = 0;
     if(line[0] == '\t') {
       add_rule_target(currTgt, line);
     } else {
-      while(line[i] != '\0') {
+      while(!envLine && line[i] != '\0') {
         if(line[i] == ':') {
           line[i] = '\0';
           currTgt = new_target(&line[start]);
@@ -73,6 +75,7 @@ int main(int argc, const char* argv[]) {
         } else if(line[i] == '=') {
           line[i] = '\0';
           setenv(&line[start], &line[i+1], 1);
+          envLine = 1;
         } else if(line[i] == ' ') {
           line[i] = '\0';
           lastSpace = 1;
@@ -84,6 +87,9 @@ int main(int argc, const char* argv[]) {
           lastSpace = 0;
         }
         ++i;
+      }
+      if(start != 0) {
+        add_dependency_target(currTgt, &line[start]);
       }
     }
 
@@ -109,7 +115,7 @@ void processline (char* line) {
 
   int* argcp = malloc(sizeof(int));
   char* expandedLine = malloc(1024 * sizeof(char));
-  if(expand(line, expandedLine, 1024)) {
+  if(!expand(line, expandedLine, 1024)) {
     return;
   }
   char** argumentArray = arg_parse(expandedLine, argcp);
@@ -166,7 +172,7 @@ int expand(char* orig, char* new, int newsize) {
       }
     } else if(!lookingForEnd) {
       if(newLen + 1 < newsize) {
-        newLen = newLen + sprintf(&new[newLen], "%s", &orig[i]);
+        newLen = 1 + newLen + (0 * snprintf(&new[newLen], 2, "%s", &orig[i]));
       } else {
         fprintf(stderr, "Buffer overflow while expanding environment variables.");
         return 0;
@@ -185,9 +191,12 @@ void executeTarget(char* tgtName) {
   target* tgt = NULL;
   tgt = find_target(tgtName);
   if(tgt != NULL) {
-    setExecuted(tgt, 1);
     for_each_dependency(tgt, executeTarget);
 
-    for_each_rule(tgt, processline);
+    tgt = find_target(tgtName);
+    if(!isExecuted(tgt)) {
+      setExecuted(tgt, 1);
+      for_each_rule(tgt, processline);
+    }
   }
 }
