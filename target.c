@@ -49,7 +49,7 @@ target* find_target(char* name) {
     if(!strcmp(currTgt->tgtName, name)){
       return currTgt;
     } else {
-      *currTgt = *currTgt->next;
+      currTgt = currTgt->next;
     }
   }
   return currTgt;
