@@ -55,7 +55,7 @@ int main(int argc, const char* argv[]) {
     makefile = fopen(fileName", "r");
   }else{
     fprintf(stderr, "The file %s doesn't exist", fileName);
-    exit();
+    _exit(EXIT_FAILURE);
   }
   
   ssize_t linelen = getline(&line, &bufsize, makefile);
