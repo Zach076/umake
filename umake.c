@@ -50,14 +50,14 @@ int main(int argc, const char* argv[]) {
   target* tgtList = NULL;
   int first = 1;
   int envLine = 0;
-  
+
   if(access(fileName, R_OK) != -1) {
-    makefile = fopen(fileName", "r");
+    makefile = fopen(fileName, "r");
   }else{
     fprintf(stderr, "The file %s doesn't exist", fileName);
     _exit(EXIT_FAILURE);
   }
-  
+
   ssize_t linelen = getline(&line, &bufsize, makefile);
 
   while(-1 != linelen) {
@@ -69,12 +69,12 @@ int main(int argc, const char* argv[]) {
       line[linelen] = '\0';
     }
 
-    while(line[i] != '#' && line[i] != '/0') {
+    while(line[i] != '#' && line[i] != '\0') {
         ++i;
     }
-    
-    if(line[i] != '/0') {
-      i=0
+
+    if(line[i] != '\0') {
+      i=0;
       envLine = 0;
       if(line[0] == '\t') {
         add_rule_target(currTgt, line);
