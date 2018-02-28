@@ -38,11 +38,11 @@ void processline(char* line);
  */
 int main(int argc, const char* argv[]) {
 
-  FILE* makefile = fopen("./uMakefile", "r");
+  char* fileName = "./uMakefile";
+  FILE* makefile;
 
   size_t  bufsize = 0;
   char*   line    = NULL;
-  ssize_t linelen = getline(&line, &bufsize, makefile);
   int i = 0;
   int start = 0;
   int lastSpace = 0;
@@ -50,6 +50,15 @@ int main(int argc, const char* argv[]) {
   target* tgtList = NULL;
   int first = 1;
   int envLine = 0;
+  
+  if(access(fileName, R_OK) != -1) {
+    makefile = fopen(fileName", "r");
+  }else{
+    fprintf(stderr, "The file %s doesn't exist", fileName);
+    exit();
+  }
+  
+  ssize_t linelen = getline(&line, &bufsize, makefile);
 
   while(-1 != linelen) {
     i = 0;
@@ -60,36 +69,43 @@ int main(int argc, const char* argv[]) {
       line[linelen] = '\0';
     }
 
-    envLine = 0;
-    if(line[0] == '\t') {
-      add_rule_target(currTgt, line);
-    } else {
-      while(!envLine && line[i] != '\0') {
-        if(line[i] == ':') {
-          line[i] = '\0';
-          currTgt = new_target(&line[start]);
-          if(first) {
-            first = 0;
-            tgtList = find_target(&line[start]);
-          }
-        } else if(line[i] == '=') {
-          line[i] = '\0';
-          setenv(&line[start], &line[i+1], 1);
-          envLine = 1;
-        } else if(line[i] == ' ') {
-          line[i] = '\0';
-          lastSpace = 1;
-          if(start != 0) {
-            add_dependency_target(currTgt, &line[start]);
-          }
-        } else if(lastSpace == 1) {
-          start = i;
-          lastSpace = 0;
-        }
+    while(line[i] != '#' && line[i] != '/0') {
         ++i;
-      }
-      if(start != 0) {
-        add_dependency_target(currTgt, &line[start]);
+    }
+    
+    if(line[i] != '/0') {
+      i=0
+      envLine = 0;
+      if(line[0] == '\t') {
+        add_rule_target(currTgt, line);
+      } else {
+        while(!envLine && line[i] != '\0') {
+          if(line[i] == ':') {
+            line[i] = '\0';
+            currTgt = new_target(&line[start]);
+            if(first) {
+              first = 0;
+              tgtList = find_target(&line[start]);
+            }
+          } else if(line[i] == '=') {
+            line[i] = '\0';
+            setenv(&line[start], &line[i+1], 1);
+            envLine = 1;
+          } else if(line[i] == ' ') {
+            line[i] = '\0';
+            lastSpace = 1;
+            if(start != 0) {
+              add_dependency_target(currTgt, &line[start]);
+            }
+          } else if(lastSpace == 1) {
+            start = i;
+            lastSpace = 0;
+          }
+          ++i;
+        }
+        if(start != 0) {
+          add_dependency_target(currTgt, &line[start]);
+        }
       }
     }
 
