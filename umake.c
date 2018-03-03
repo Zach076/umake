@@ -152,6 +152,7 @@ void processline (char* line) {
   }
   dup2(out, 1);
   close(out);
+  *argumentArray[i] = '\0';
 
   i=0;
   while(argumentArray[i] != "<" && argumentArray[i] != '\0') {
@@ -163,7 +164,7 @@ void processline (char* line) {
     dup2(out, 1);
     close(in);
   }
-  ++i;
+  *argumentArray[i] = '\0';
 
   if(*argcp) {
 
