@@ -5,6 +5,9 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <time.h>
 
 struct stringList_st {
   char* stringVal;
@@ -52,7 +55,12 @@ target* find_target(char* name) {
       currTgt = currTgt->next;
     }
   }
-  return currTgt;
+  if(!strcmp(currTgt->tgtName, name)){
+    return currTgt;
+  } else {
+    fprintf(stderr, "The target %s doesn't exist", name);
+    exit(EXIT_FAILURE);
+  }
 }
 
 void add_dependency_target(target* tgt, char* dep) {
@@ -109,6 +117,24 @@ void for_each_dependency(target* tgt, list_action action) {
   }
 }
 
+time_t timeOf(target* tgt) {
+  struct stat* buf = malloc(sizeof(struct stat));
+  time_t *tgtTime = malloc(sizeof(time_t));
+  char* fileName = malloc(sizeof(*(tgt->tgtName))+2);
+
+  strcpy(fileName, "./");
+  if(!stat(strcat(fileName, tgt->tgtName), buf)) {
+    *tgtTime = buf->st_mtime;
+  } else {
+    fprintf(stderr, "The file %s doesn't exist timeOf", fileName);
+    exit(EXIT_FAILURE);
+  }
+
+  free(buf);
+  free(fileName);
+  return *tgtTime;
+}
+
 target* getNext(target* tgt) {
   return tgt->next;
 }
@@ -123,4 +149,18 @@ void setExecuted(target* tgt, int i) {
 
 int isExecuted(target* tgt) {
   return tgt->executed;
+}
+
+char* getDep_i(target* tgt, int i) {
+  int j = 0;
+  stringList* currDep = tgt->depList;
+  if(currDep != NULL && currDep->stringVal != NULL) {
+    while(j != i) {
+      currDep = currDep->next;
+      ++j;
+    }
+    return currDep->stringVal;
+  }
+  fprintf(stderr, "Deplist empty");
+  exit(EXIT_FAILURE);
 }
