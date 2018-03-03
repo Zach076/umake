@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 #include "arg_parse.h"
 #include "target.h"
 
@@ -26,6 +27,7 @@
 int expand(char* orig, char* new, int newsize);
 void executeTarget(char* tgtName);
 void processline(char* line);
+int outOfDate(target* tgt);
 
 /* Main entry point.
  * argc    A count of command-line arguments
@@ -55,7 +57,7 @@ int main(int argc, const char* argv[]) {
     makefile = fopen(fileName, "r");
   }else{
     fprintf(stderr, "The file %s doesn't exist", fileName);
-    _exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
   }
 
   ssize_t linelen = getline(&line, &bufsize, makefile);
@@ -73,39 +75,39 @@ int main(int argc, const char* argv[]) {
         ++i;
     }
 
-    if(line[i] != '\0') {
-      i=0;
-      envLine = 0;
-      if(line[0] == '\t') {
-        add_rule_target(currTgt, line);
-      } else {
-        while(!envLine && line[i] != '\0') {
-          if(line[i] == ':') {
-            line[i] = '\0';
-            currTgt = new_target(&line[start]);
-            if(first) {
-              first = 0;
-              tgtList = find_target(&line[start]);
-            }
-          } else if(line[i] == '=') {
-            line[i] = '\0';
-            setenv(&line[start], &line[i+1], 1);
-            envLine = 1;
-          } else if(line[i] == ' ') {
-            line[i] = '\0';
-            lastSpace = 1;
-            if(start != 0) {
-              add_dependency_target(currTgt, &line[start]);
-            }
-          } else if(lastSpace == 1) {
-            start = i;
-            lastSpace = 0;
+    line[i] = '\0';
+
+    i=0;
+    envLine = 0;
+    if(line[0] == '\t') {
+      add_rule_target(currTgt, line);
+    } else {
+      while(!envLine && line[i] != '\0') {
+        if(line[i] == ':') {
+          line[i] = '\0';
+          currTgt = new_target(&line[start]);
+          if(first) {
+            first = 0;
+            tgtList = find_target(&line[start]);
           }
-          ++i;
+        } else if(line[i] == '=') {
+          line[i] = '\0';
+          setenv(&line[start], &line[i+1], 1);
+          envLine = 1;
+        } else if(line[i] == ' ') {
+          line[i] = '\0';
+          lastSpace = 1;
+          if(start != 0) {
+            add_dependency_target(currTgt, &line[start]);
+          }
+        } else if(lastSpace == 1) {
+          start = i;
+          lastSpace = 0;
         }
-        if(start != 0) {
-          add_dependency_target(currTgt, &line[start]);
-        }
+        ++i;
+      }
+      if(start != 0) {
+        add_dependency_target(currTgt, &line[start]);
       }
     }
 
@@ -135,6 +137,34 @@ void processline (char* line) {
     return;
   }
   char** argumentArray = arg_parse(expandedLine, argcp);
+
+  int i = 0;
+  int in = 0;
+  int out = 1;
+  while(argumentArray[i] != ">>" && argumentArray[i] != ">" && argumentArray[i] != '\0') {
+    ++i;
+  }
+  //set output to argumentArray[i+1] and argumentArray[i] to null
+  if(argumentArray[i] == ">>") {
+    out = open(argumentArray[i+1], O_WRONLY | O_CREAT);
+  } else if(argumentArray[i] == ">"){
+    out = open(argumentArray[i+1], O_WRONLY | O_TRUNC | O_CREAT);
+  }
+  dup2(out, 1);
+  close(out);
+
+  i=0;
+  while(argumentArray[i] != "<" && argumentArray[i] != '\0') {
+    ++i;
+  }
+  //set input to argumentArray[i+1] and argumentArray[i] to null
+  if(argumentArray[i] == "<") {
+    in = open(argumentArray[i+1], O_RDONLY);
+    dup2(out, 1);
+    close(in);
+  }
+  ++i;
+
   if(*argcp) {
 
     const pid_t cpid = fork();
@@ -210,9 +240,49 @@ void executeTarget(char* tgtName) {
     for_each_dependency(tgt, executeTarget);
 
     tgt = find_target(tgtName);
-    if(!isExecuted(tgt)) {
+    if(!isExecuted(tgt) && outOfDate(tgt)) {
       setExecuted(tgt, 1);
       for_each_rule(tgt, processline);
     }
   }
+}
+
+int outOfDate(target* tgt) {
+  char* tgtFileName = malloc(sizeof(getName(tgt))+2);
+  char* depFileName = malloc(sizeof(char)+2);
+  time_t tgtTime;
+
+  //if the target file doesn't exist, return tru for update
+  strcpy(tgtFileName, "./");
+  strcat(tgtFileName, getName(tgt));
+  if(!access(tgtFileName, R_OK)) {
+    tgtTime = timeOf(tgt);
+  } else {
+    //FILE NOT FOUND UPDATE NEEDED
+    return 1;
+  }
+  //if dependency list is empty return false for update
+  int i = 0;
+  if(getDep_i(tgt, i) == NULL) {
+    return 0;
+  }
+  //return true for update once a dependency is found to be more recent
+  time_t depTime = timeOf(find_target(getDep_i(tgt, i)));
+  while(getDep_i(tgt, i) != NULL ) {
+    free(depFileName);
+    depFileName = malloc(sizeof(getDep_i(tgt, i))+2);
+    strcpy(tgtFileName, "./");
+    if(!access(strcat(tgtFileName, getName(tgt)), R_OK)) {
+      //DEPENDENCY FILE NOT FOUND THROW ERROR
+      fprintf(stderr, "The file %s doesn't exist", depFileName);
+      exit(EXIT_FAILURE);
+    }
+    depTime = timeOf(find_target(getDep_i(tgt, i)));
+    if(difftime(tgtTime, depTime) < 0) {
+      return 1;
+    }
+    ++i;
+  }
+
+  return 0;
 }
