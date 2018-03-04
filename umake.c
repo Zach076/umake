@@ -11,6 +11,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <time.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "arg_parse.h"
 #include "target.h"
 
@@ -141,34 +144,43 @@ void processline (char* line) {
   int i = 0;
   int in = 0;
   int out = 1;
-  while(argumentArray[i] != ">>" && argumentArray[i] != ">" && argumentArray[i] != '\0') {
-    ++i;
-  }
-  //set output to argumentArray[i+1] and argumentArray[i] to null
-  if(argumentArray[i] == ">>") {
-    out = open(argumentArray[i+1], O_WRONLY | O_CREAT);
-  } else if(argumentArray[i] == ">"){
-    out = open(argumentArray[i+1], O_WRONLY | O_TRUNC | O_CREAT);
-  }
-  dup2(out, 1);
-  close(out);
-  *argumentArray[i] = '\0';
-
-  i=0;
-  while(argumentArray[i] != "<" && argumentArray[i] != '\0') {
-    ++i;
-  }
-  //set input to argumentArray[i+1] and argumentArray[i] to null
-  if(argumentArray[i] == "<") {
-    in = open(argumentArray[i+1], O_RDONLY);
-    dup2(out, 1);
-    close(in);
-  }
-  *argumentArray[i] = '\0';
+  int closeIn = 0;
+  int closeOut = 0;
 
   if(*argcp) {
 
     const pid_t cpid = fork();
+
+    while(argumentArray[i] != NULL && strcmp(argumentArray[i], ">>") && strcmp(argumentArray[i], ">")) {
+      ++i;
+    }
+    //set output to argumentArray[i+1] and argumentArray[i] to null
+    if(argumentArray[i] != NULL) {
+      if(!strcmp(argumentArray[i], ">>")) {
+        out = open(argumentArray[i+1], O_WRONLY | O_CREAT, 0666);
+        closeOut = 1;
+      } else if(!strcmp(argumentArray[i], ">")){
+        out = open(argumentArray[i+1], O_WRONLY | O_TRUNC | O_CREAT, 0666);
+        closeOut = 1;
+      }
+      dup2(out, 1);
+      argumentArray[i] = NULL;
+    }
+
+    i=0;
+    while(argumentArray[i] != NULL && strcmp(argumentArray[i], "<")) {
+      ++i;
+    }
+    //set input to argumentArray[i+1] and argumentArray[i] to null
+    if(argumentArray[i] != NULL) {
+      if(!strcmp(argumentArray[i], "<")) {
+        in = open(argumentArray[i+1], O_RDONLY);
+        closeIn = 1;
+        dup2(out, 1);
+      }
+      argumentArray[i] = NULL;
+    }
+
     switch(cpid) {
 
     case -1: {
@@ -195,6 +207,14 @@ void processline (char* line) {
         }
       break;
     }
+    }
+    if(closeOut) {
+      close(out);
+      closeOut = 0;
+    }
+    if(closeIn) {
+      close(in);
+      closeIn = 0;
     }
   }
   free(argumentArray);
@@ -274,9 +294,8 @@ int outOfDate(target* tgt) {
     depFileName = malloc(sizeof(getDep_i(tgt, i))+2);
     strcpy(tgtFileName, "./");
     if(!access(strcat(tgtFileName, getName(tgt)), R_OK)) {
-      //DEPENDENCY FILE NOT FOUND THROW ERROR
-      fprintf(stderr, "The file %s doesn't exist", depFileName);
-      exit(EXIT_FAILURE);
+      //DEPENDENCY FILE NOT FOUND UPDATE NEEDED
+      return 1;
     }
     depTime = timeOf(find_target(getDep_i(tgt, i)));
     if(difftime(tgtTime, depTime) < 0) {
