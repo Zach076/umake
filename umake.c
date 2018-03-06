@@ -159,14 +159,14 @@ void processline (char* line) {
     }
 
     case 0: {
-      
+
       while(argumentArray[i] != NULL && strcmp(argumentArray[i], ">>") && strcmp(argumentArray[i], ">")) {
         ++i;
       }
       //set output to argumentArray[i+1] and argumentArray[i] to null
       if(argumentArray[i] != NULL) {
         if(!strcmp(argumentArray[i], ">>")) {
-          out = open(argumentArray[i+1], O_WRONLY | O_CREAT, 0666);
+          out = open(argumentArray[i+1], O_WRONLY | O_APPEND | O_CREAT, 0666);
           closeOut = 1;
         } else if(!strcmp(argumentArray[i], ">")){
           out = open(argumentArray[i+1], O_WRONLY | O_TRUNC | O_CREAT, 0666);
